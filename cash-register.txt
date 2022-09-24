@@ -1,0 +1,94 @@
+const currency = {
+    'PENNY': 0.01,
+    'NICKEL': 0.05,
+    'DIME': 0.1,
+    'QUARTER': 0.25,
+    'ONE': 1,
+    'FIVE': 5,
+    'TEN': 10,
+    'TWENTY': 20,
+    'ONE HUNDRED': 100
+  }
+
+function getLowestDenom(changeDue, cid) {
+  // Find lowest denomination to give change
+  let lowestDenom;
+  for (let i = Object.values(currency).length; i >= 0; i--) {
+    if (Object.values(currency)[i] <= changeDue && arr2obj(cid)[Object.keys(currency)[i]] > 0) {
+      lowestDenom = Object.keys(currency)[i];
+      break;
+    }
+  }
+  return lowestDenom;
+}
+
+function arr2obj(arr) {
+    // Create an empty object
+    let obj = {};
+    arr.forEach((v) => {
+    // Extract the key and the value
+    let key = v[0];
+    let value = v[1];
+    // Add the key and value to
+    // the object
+    obj[key] = value;
+    });
+    // Return the object
+    return obj;
+}
+
+function checkCashRegister(price, cash, cid) {
+  // Use map to count of denoms in drawer e.g. # of pennies
+  let did = cid.map(a => [a[0], Math.round(a[1] / currency[a[0]])])
+  let changeDue = cash - price;
+  // Index of lowestDenom
+  let ldIndex = Object.keys(arr2obj(cid)).indexOf(getLowestDenom(changeDue, cid))
+  // cidSum = total sum of cash in drawer
+  let cidSum = Object.values(arr2obj(cid)).reduce((partialSum, a) => partialSum + a, 0).toFixed(2);
+  let requiredDenoms = [];
+  let returnedChange = [];
+  const statTypes = {
+  0: 'INSUFFICIENT_FUNDS',
+  1: 'CLOSED',
+  2: 'OPEN'
+}
+  // Check if cid > changeDue
+  if (cidSum < changeDue) {
+    // INSUFFICIENT FUNDS
+    return {'status': statTypes[0], 'change': []}
+  } else if (cidSum == changeDue) {
+    // CLOSED
+    return {'status': statTypes[1], 'change': cid}
+  } else {
+    // Filter cid to only include acceptable denoms where cid amount > 0
+    let subD = did.slice(0, ldIndex + 1).filter(a => a[1] > 0).reverse();
+    // Get required denoms to satisfy changeDue using subD
+    let total = 0;
+    for (let i = 0; i < subD.length && total < changeDue; i++) {
+      let remainder = (changeDue - total).toFixed(2)
+      console.log('remainder is ' + remainder)
+      let numD;
+      console.log('i is ' + i)
+      for (let cnt = 0; cnt * currency[subD[i][0]] <= remainder && cnt <= subD[i][1] ; cnt++) {
+        console.log('cnt is ' + cnt)
+        numD = cnt;
+      }
+      requiredDenoms.push([subD[i][0], numD]);
+      total += numD * currency[subD[i][0]]
+      console.log('total is ' + total)
+    }
+    // Use map and filter to get returnedChange
+    returnedChange = requiredDenoms.filter(a => a[1] > 0).map(a => [a[0], a[1] * currency[a[0]]])
+    // Recalculate cidSum but for subD
+    let subDSum = Object.values(arr2obj(subD.map(a => [a[0], a[1] * currency[a[0]]]))).reduce((partialSum, a) => partialSum + a, 0).toFixed(2);
+    // Check if sufficient coins to satisfy changeDue
+    if (subDSum < changeDue) {
+      return {'status': statTypes[0], 'change': []}
+    } else {
+      return {'status': statTypes[2], 'change': returnedChange}
+    }
+  }
+}
+
+console.log(checkCashRegister(19.5, 20, [["PENNY", 0.01], ["NICKEL", 0], ["DIME", 0], ["QUARTER", 0], ["ONE", 1], ["FIVE", 0], ["TEN", 0], ["TWENTY", 0], ["ONE HUNDRED", 0]]));
+
